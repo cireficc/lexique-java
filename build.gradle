@@ -3,6 +3,18 @@ version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
 
+// Configuration for the build script. Building requires ActiveJDBC Instrumentation, so
+// we include those dependencies
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.javalite:activejdbc:1.4.11'
+        classpath 'org.javalite:activejdbc-instrumentation:1.4.11'
+    }
+}
+
 repositories {
     mavenCentral()
 }
@@ -20,11 +32,23 @@ dependencies {
 // Create a single Jar with all dependencies bundled
 task fatJar(type: Jar) {
     manifest {
-        attributes 'Implementation-Title': 'Lexique Test',
+        attributes 'Implementation-Title': 'Lexique',
                 'Implementation-Version': version,
                 'Main-Class': 'Main'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
+}
+
+// Instrument models (http://stackoverflow.com/q/24899385/1986871)
+task instrument(dependsOn: 'build', type: JavaExec) {
+    main = 'org.javalite.instrumentation.Main'
+    classpath = buildscript.configurations.classpath
+    classpath += sourceSets.main.runtimeClasspath
+    jvmArgs '-DoutputDirectory=' + sourceSets.main.output.classesDir.getPath()
+}
+
+compileJava.doLast {
+    tasks.instrument.execute()
 }
