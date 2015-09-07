@@ -16,3 +16,15 @@ dependencies {
     compile 'org.apache.logging.log4j:log4j-api:2.3'
     compile 'org.apache.logging.log4j:log4j-core:2.3'
 }
+
+// Create a single Jar with all dependencies bundled
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Implementation-Title': 'Lexique Test',
+                'Implementation-Version': version,
+                'Main-Class': 'Main'
+    }
+    baseName = project.name + '-all'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
